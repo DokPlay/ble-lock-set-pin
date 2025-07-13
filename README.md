@@ -1,3 +1,4 @@
+📘 [🇷🇺 Russian](README.ru.md)
 
 ✅ What the script `ble_lock_set_pin.py` does
 The script automatically changes the PIN code of the lock using a BLE capture (`pcapng`) that contains the handshake:
