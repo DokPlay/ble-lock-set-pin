@@ -1,105 +1,113 @@
 
-✅ Что делает скрипт ble_lock_set_pin.py
-Скрипт автоматически меняет PIN-код замка, используя BLE-захват (pcapng), в котором есть рукопожатие:
+✅ What the script `ble_lock_set_pin.py` does
+The script automatically changes the PIN code of the lock using a BLE capture (`pcapng`) that contains the handshake:
 
-Извлекает SKDm, SKDs и IV из capture.pcapng.
+Extracts SKDm, SKDs and IV from `capture.pcapng`.
 
-Формирует TLV с новым PIN и считает CRC16.
+Forms a TLV with the new PIN and calculates CRC16.
 
-Шифрует по схеме AES-CTR, как в приложении Tuya Smart.
+Encrypts using AES-CTR, like in the Tuya Smart app.
 
-Отправляет команды delete и create через Tuya OpenAPI.
+Sends `delete` and `create` commands via Tuya OpenAPI.
 
-Проверяет успешную установку PIN по DP unlock_password.
+Verifies successful PIN installation via DP `unlock_password`.
 
-📦 1. Как подготовить BLE-захват
-Каждый раз, когда ты хочешь поменять PIN:
+📦 1. How to prepare the BLE capture
+Every time you want to change the PIN:
 
-запускаешь Wireshark 
+Start Wireshark
 
+Capture for 5–10 seconds after the lock connects to the Tuya Smart app.
 
+\-----------Important: you must start capturing **before** turning on the lock!-------------
 
-ловишь 5–10 секунд после подключения замка к приложению Tuya Smart.
+Save the file as `capture.pcapng` and place it next to the script.
 
-                -----------Важно до включения замка нужно включить ловить пакеты!-------------
+\--------⚠️ Important: the file **must** be named exactly `capture.pcapng` — the script expects this name.--------
+If you want to use a different name — just replace `"capture.pcapng"` in the script.
 
-сохраняешь файл как capture.pcapng и кладёшь рядом со скриптом.
+🛠️ 2. What to configure in the script — I’ve already done it, just double-check it —
+In `ble_lock_set_pin.py`:
 
---------⚠️ Важно: файл должен называться именно capture.pcapng — так ожидает скрипт.-------
-Если хочешь использовать другое имя — просто замени "capture.pcapng" в скрипте.
+```
+ACCESS_ID    = "..."      # Your API ID from Tuya  
+ACCESS_KEY   = "..."      # Your Secret Key  
+DEVICE_ID    = "..."      # The device (lock) ID  
+LOCAL_KEY    = b"..."     # 16-byte local_key of the lock  
+NEW_PIN      = "124578"   # New PIN code (6 digits)  
+PASSWORD_ID  = 1          # Slot ID, usually 1  
+```
 
-🛠️ 2. Что настроить в скрипте --------я уже сделал просто проверь на всякий --------------
-В самом ble_lock_set_pin.py:
+Everything else is automated, no need to touch it.
+All steps are marked in the code as STEP 1, STEP 2, etc. with detailed comments.
 
+📥 3. Install dependencies (if not yet installed)
+\-------------Run once in the console:-------------------
 
-ACCESS_ID    = "..."      # Твой API ID от Tuya
-ACCESS_KEY   = "..."      # Твой Secret Key
-DEVICE_ID    = "..."      # ID устройства (замка)
-LOCAL_KEY    = b"..."     # 16-байтовый local_key замка
-NEW_PIN      = "124578"   # Новый PIN-код (6 цифр)
-PASSWORD_ID  = 1          # ID слота, обычно 1
-Всё остальное — уже автоматизировано, трогать не нужно.
-Все шаги помечены в коде как ШАГ 1, ШАГ 2 и т.д. с подробными комментариями.
+Each command is separate — run one by one in the command line. First install the dependencies, then go to the folder with the files.
 
-📥 3. Установи зависимости (если ещё не ставил)
-                                                            -------------Один раз выполните в консоли:-------------------
+Python 3.10.11 was used — but the script should work from Python 3.7 to 3.12 (not tested, but by code it should).
 
------------каждая команда отдельно в командной строке --- после запуска командой строки и сразу установка зависимостей и потом уже переход в папку с файлами--------
+To check your version:
 
-Python 3.10.11 нужна работал на ней но мой скрипт должен работать от Python 3.7–3.12 не проверял но по коду должен
-
-python --version     это посмотреть можно какая у вас версия, если не совпадает удалите ее полностью вмести с папками в профиль, зайдете ваше имя на диске с найдете там  AppData тоже подчистите папка python будет удаляйте перезагрузите и установите нужную версия!
-
-зависимости 
-
-pip install tuya-connector-python pycryptodome crcmod    -----------первая команда обязательно----------
-
-pip install pyshark                   ----------------PyShark / TShark Скрипт использует pyshark. Нужно, чтобы на ПК стоял Wireshark/TShark (достаточно Runtime).
-
-                                                                     Если TShark не в PATH, PyShark выбросит ошибку.
-
-                                                       ----«Установите Wireshark ≥ 3.4 и убедитесь, что tshark доступен из командной строки».----
+python --version
 
 
+If the version is wrong, remove it completely including all folders in your user profile — go to your username folder on the disk, find `AppData`, and delete the Python folder. Then reboot and install the required version.
 
-pip install tuya-iot-py-sdk   вторая 🔧 Tuya SDK — не нужен для текущего скрипта но у меня была установлена на всякий установите мало весит!
-
-pip install rich             🌈 rich — красивый вывод логов в консоли
-
-pip install ipython        🧠 ipython — интерактивная оболочка Python. Очень удобно для тестов и работы со скриптом вживую.
+Dependencies:
 
 
+pip install tuya-connector-python pycryptodome crcmod   # First command, mandatory
+
+pip install pyshark   # PyShark / TShark — the script uses pyshark.  
+                      # You need Wireshark/TShark installed on your PC (runtime is enough).  
+                      # If TShark is not in PATH, PyShark will throw an error.  
+                      # ----“Install Wireshark ≥ 3.4 and make sure TShark is accessible from command line.”----
+
+pip install tuya-iot-py-sdk   # Tuya SDK — not required for this script, but I had it installed, might be helpful
+
+pip install rich             # 🌈 rich — pretty log output in the console
+
+pip install ipython          # 🧠 ipython — interactive Python shell. Very convenient for testing and live script editing.
 
 
-----------Файл захвата-----------
+\----------Capture file-----------
 
-Обязательно содержит оба пакета LL_ENC_REQ / LL_ENC_RSP.
+Must include both packets: `LL_ENC_REQ` / `LL_ENC_RSP`.
 
-Имя по-умолчанию capture.pcapng; при другом имени нужно поменять PCAP_FILE.
+Default name: `capture.pcapng`; if using another name — change `PCAP_FILE`.
 
-
-🚀 4. Как запустить
-
-python ble_lock_set_pin.py               НУ САМО СОБОЙ В КОНСОЛИ КОМАНДА cd путь_до_папки python ble_lock_set_pin.py
-Если всё прошло успешно, ты увидишь:
+🚀 4. How to run
 
 
+python ble_lock_set_pin.py
 
--------------  LOCAL_KEY  --------------
 
-Должен быть 16 байт, без пробелов, в виде b"...".
+(Obviously in the console, run: `cd path_to_folder` then `python ble_lock_set_pin.py`)
 
-Если  будете использовать другой замок — надо заменить на его local_key.
-                      
+If everything goes well, you will see:
 
-                                             ------------------------------Ограничения--------------------------------
+\-------------  LOCAL\_KEY  --------------
 
-                                   Замок должен быть онлайн в момент выполнения скрипта.
-🎉 PIN применён, введите 124578 на замке!
-📌 коротко:
-Что	Нужно
-🔁 Новый PIN	NEW_PIN в скрипте
-📄 Новый захват	capture.pcapng рядом со скриптом
-📦 Зависимости	выше смотреть
-💬 Язык	Python 3.10.11 
+Must be 16 bytes, no spaces, in the format `b"..."`.
+
+If you're using another lock — you must replace it with its local\_key.
+
+\------------------------------Limitations--------------------------------
+
+The lock must be online at the time the script runs.
+🎉 PIN applied — enter 124578 on the lock!
+
+📌 Summary:
+
+| What            | Required                        |
+| --------------- | ------------------------------- |
+| 🔁 New PIN      | Set `NEW_PIN` in the script     |
+| 📄 New capture  | `capture.pcapng` next to script |
+| 📦 Dependencies | See above                       |
+| 💬 Language     | Python 3.10.11                  |
+
+---
+
 
