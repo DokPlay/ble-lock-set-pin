@@ -110,5 +110,7 @@ The lock must be online at the time the script runs.
 | 💬 Language     | Python 3.10.11                  |
 
 ---
+License
+This project is licensed under the MIT License. See LICENSE for details.
 
 
